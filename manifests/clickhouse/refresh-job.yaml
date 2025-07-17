@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: clickhouse-s3-refresh
+  namespace: default
+spec:
+  schedule: "* * * * *"  # Run every 1 minute
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: clickhouse-client
+            image: clickhouse/clickhouse-client:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              clickhouse-client --host=clickhouse --query="
+              -- Refresh S3 table by recreating it (safer approach)
+              DETACH TABLE IF EXISTS transactions.s3_transactions;
+              
+              CREATE TABLE IF NOT EXISTS transactions.s3_transactions (
+                transaction_id String,
+                account_id String,
+                transaction_type String,
+                amount Float64,
+                currency String,
+                merchant_name String,
+                category String,
+                status String,
+                balance_after Float64,
+                location String,
+                transaction_time String,
+                transaction_date Date
+              ) ENGINE = S3('https://prsv-vpb-hackathon-transaction-data-processed.s3.ap-southeast-1.amazonaws.com/transaction_date=*/part-*.snappy.parquet', 
+                'Parquet', 
+                'transaction_date Date')
+              SETTINGS
+                s3_check_objects_after_refresh = true,
+                s3_list_object_keys_size = 5000;"
+          restartPolicy: OnFailure

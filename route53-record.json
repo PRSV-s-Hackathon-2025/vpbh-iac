@@ -1,0 +1,17 @@
+{
+  "Comment": "Create A record for backend.awscloudclubs.com",
+  "Changes": [
+    {
+      "Action": "CREATE",
+      "ResourceRecordSet": {
+        "Name": "backend.awscloudclubs.com",
+        "Type": "A",
+        "AliasTarget": {
+          "DNSName": "k8s-default-apiingre-e27345915c-694881870.ap-southeast-1.elb.amazonaws.com",
+          "EvaluateTargetHealth": true,
+          "HostedZoneId": "Z1LMS91P8CMLE5"
+        }
+      }
+    }
+  ]
+}

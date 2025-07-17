@@ -1,0 +1,49 @@
+aws_region = "ap-southeast-1"
+vpc_cidr   = "10.0.0.0/16"
+
+availability_zones = [
+  "ap-southeast-1a",
+  "ap-southeast-1b"
+]
+
+private_subnet_cidrs = [
+  "10.0.1.0/24",
+  "10.0.2.0/24",
+  "10.0.3.0/24",
+  "10.0.4.0/24"
+]
+
+public_subnet_cidrs = [
+  "10.0.101.0/24",
+  "10.0.102.0/24"
+]
+
+cluster_name    = "vpbh-bigdata-cluster"
+cluster_version = "1.33"
+
+node_groups = {
+  api = {
+    instance_types = ["t3.medium"]
+    subnet_ids     = [0, 1]
+    scaling_config = {
+      desired_size = 2
+      max_size     = 4
+      min_size     = 1
+    }
+  }
+  clickhouse = {
+    instance_types = ["t3.xlarge"]
+    subnet_ids     = [2, 3]
+    scaling_config = {
+      desired_size = 1
+      max_size     = 3
+      min_size     = 1
+    }
+  }
+}
+
+tags = {
+  Terraform   = "true"
+  Environment = "dev"
+  Project     = "vpbh-bigdata"
+}

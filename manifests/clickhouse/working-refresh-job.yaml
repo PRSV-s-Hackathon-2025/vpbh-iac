@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: clickhouse-s3-refresh
+  namespace: default
+spec:
+  schedule: "* * * * *"  # Run every 1 minute
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: clickhouse-client
+            image: clickhouse/clickhouse-client:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              clickhouse-client --host=clickhouse --query="
+              -- Handle detached table
+              ATTACH TABLE IF EXISTS transactions.s3_transactions;
+              DROP TABLE IF EXISTS transactions.s3_transactions;
+              
+              -- Create the S3 table with the working URL format
+              CREATE TABLE transactions.s3_transactions (
+                transaction_id String,
+                account_id String,
+                transaction_type String,
+                amount Float64,
+                currency String,
+                merchant_name String,
+                category String,
+                status String,
+                balance_after Float64,
+                location String,
+                transaction_time String,
+                transaction_date Date
+              ) ENGINE = S3('s3://prsv-vpb-hackathon-transaction-data-processed/transaction_date=*/part-*.snappy.parquet', 
+                'Parquet');
+                
+              -- Insert new data
+              INSERT INTO transactions.daily_transactions
+              SELECT
+                transaction_id,
+                account_id,
+                transaction_type,
+                amount,
+                currency,
+                merchant_name,
+                category,
+                status,
+                balance_after,
+                location,
+                transaction_time,
+                transaction_date
+              FROM transactions.s3_transactions
+              WHERE (transaction_id, account_id) NOT IN (
+                SELECT transaction_id, account_id FROM transactions.daily_transactions
+              );"
+          restartPolicy: OnFailure
